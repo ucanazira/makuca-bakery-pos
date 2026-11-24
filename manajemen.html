@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Produk - Bakery POS</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <div class="pos-layout">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <img src="img/logo-putih.png" alt="Bakery Makuca Logo" style="max-width: 180px; height: auto;">
+                </div>
+                <button class="close-sidebar" onclick="toggleSidebar()">&times;</button>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="index.html">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    Kasir
+                </a>
+                <a href="laporan.html">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Laporan Penjualan
+                </a>
+                <a href="manajemen.html" class="active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Manajemen Produk
+                </a>
+                <a href="#" onclick="alert('Fitur Promo segera hadir!')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                    Tambah Promo
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button onclick="logout()" class="btn-logout-sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Log Out
+                </button>
+            </div>
+        </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- KONTEN UTAMA MANAJEMEN PRODUK -->
+        <div class="main-content" style="margin-right: 0;">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="btn-menu" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    <h1 style="font-size: 24px; color: #3E2723; margin-left: 10px;">Manajemen Produk</h1>
+                </div>
+                <!-- Tombol Tambah Produk Baru -->
+                <button onclick="bukaModalProduk()" class="btn-primary" style="width: auto; padding: 12px 24px; border-radius: 30px;">
+                    + Tambah Produk Baru
+                </button>
+            </header>
+
+            <!-- TABEL PRODUK -->
+            <div class="card" style="background: white; padding: 30px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                <div class="table-responsive">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 14px;">
+                                <th style="padding: 12px;">Gambar</th>
+                                <th style="padding: 12px;">Nama Produk</th>
+                                <th style="padding: 12px;">Kategori</th>
+                                <th style="padding: 12px;">Harga</th>
+                                <th style="padding: 12px; text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-manajemen-body">
+                            <!-- Data diisi otomatis oleh JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH/EDIT PRODUK (Sama persis dengan Kasir) -->
+    <div id="modal-produk" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="tutupModalProduk()">&times;</span>
+            <h2 id="judul-modal-produk">Tambah Produk</h2>
+            <form id="form-produk">
+                <input type="hidden" id="edit-id-produk"> <!-- ID tersembunyi untuk edit -->
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Nama Produk</label>
+                <input type="text" id="nama-produk" required placeholder="Cth: Donat Gula" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Harga (Rp)</label>
+                <input type="number" id="harga-produk" required placeholder="Cth: 15000" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Kategori</label>
+                <input type="text" id="kategori-produk" required placeholder="Cth: Donuts, Minuman, dll" list="list-kategori" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                <datalist id="list-kategori">
+                    <option value="Breads">
+                    <option value="Cakes">
+                    <option value="Minuman">
+                </datalist>
+
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Pilih Ikon Kategori</label>
+                <select id="icon-kategori" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                    <option value="cake">Kue / Cake</option>
+                    <option value="bread">Roti / Bread</option>
+                    <option value="coffee">Minuman / Coffee</option>
+                    <option value="box">Kotak / Box</option>
+                    <option value="star">Bintang / Spesial</option>
+                </select>
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Upload Gambar (Opsional)</label>
+                <input type="file" id="gambar-produk" accept="image/*" style="margin-bottom:20px; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; background:#F8F4F1;">
+                <small style="display:block; margin-top:-10px; margin-bottom:15px; color:#64748b;">*Biarkan kosong jika tidak ingin mengubah gambar saat edit.</small>
+                
+                <button type="submit" class="btn-primary">Simpan Produk</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

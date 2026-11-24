@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Akun - Bakery Makuca</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="img/logo-hitam.png" alt="Bakery Makuca Logo" style="max-width: 200px; margin-bottom: 15px;">
+                <p style="color: #64748b; font-size: 14px;">Buat akun baru untuk mengakses kasir</p>
+            </div>
+            
+            <form id="register-form">
+                <div class="input-group-login">
+                    <label>Username Baru</label>
+                    <input type="text" id="reg-username" required placeholder="Cth: kasir_budi">
+                </div>
+                <div class="input-group-login">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" required placeholder="Buat password">
+                </div>
+                <div class="input-group-login">
+                    <label>Konfirmasi Password</label>
+                    <input type="password" id="reg-confirm" required placeholder="Ulangi password">
+                </div>
+                <button type="submit" class="btn-login">Daftar Sekarang</button>
+                <p id="error-msg" class="error-msg"></p>
+            </form>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <p style="font-size: 14px; color: #64748b;">Sudah punya akun? <a href="login.html" style="color: #3E2723; font-weight: 600; text-decoration: none;">Login di sini</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = document.getElementById('reg-username').value.trim();
+            const pass = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-confirm').value;
+            const errorMsg = document.getElementById('error-msg');
+
+            // Cek apakah password cocok
+            if (pass !== confirm) {
+                errorMsg.innerText = "Password dan Konfirmasi tidak cocok!";
+                return;
+            }
+
+            // Ambil data akun yang sudah ada (atau buat array kosong)
+            let akunTerdaftar = JSON.parse(localStorage.getItem('pos_akun')) || [];
+
+            // Cek apakah username sudah dipakai
+            if (akunTerdaftar.find(akun => akun.username === user)) {
+                errorMsg.innerText = "Username sudah dipakai, gunakan yang lain!";
+                return;
+            }
+
+            // Simpan akun baru
+            akunTerdaftar.push({ username: user, password: pass });
+            localStorage.setItem('pos_akun', JSON.stringify(akunTerdaftar));
+
+            alert("Pendaftaran berhasil! Silakan login.");
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bakery POS</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <script>
+        if (localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <div class="pos-layout">
+        
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <img src="img/logo-putih.png" alt="Bakery Makuca Logo" style="max-width: 180px; height: auto;">
+                </div>
+                <button class="close-sidebar" onclick="toggleSidebar()">&times;</button>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="index.html" class="active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                    Kasir
+                </a>
+                <a href="laporan.html">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                    Laporan Penjualan
+                </a>
+                <a href="manajemen.html">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Manajemen Produk
+                </a>
+                <a href="#" onclick="alert('Fitur Promo segera hadir!')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                    Tambah Promo
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button onclick="logout()" class="btn-logout-sidebar">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Log Out
+                </button>
+            </div>
+        </aside>
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- KONTEN UTAMA -->
+        <div class="main-content">
+            
+            <!-- TOP BAR -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button class="btn-menu" onclick="toggleSidebar()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </button>
+                    
+                    <div class="info-badge clickable" onclick="bukaKalender()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        <span id="current-date">23 Nov 2026</span>
+                    </div>
+                    
+                    <div class="info-badge">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        <span id="current-time">08:00 <span style="color:#94a3b8; font-weight:400; margin-left:4px;">AM</span></span>
+                    </div>
+                </div>
+                
+                <button class="btn-close-order" onclick="tutupKasir()">
+                    Close Order
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+                </button>
+            </header>
+
+            <!-- KATEGORI MENU (Akan diisi dinamis oleh JS) -->
+            <div class="category-list" id="category-list-container">
+                <!-- Konten di dalam ini akan digenerate otomatis oleh renderKategoriFilter() -->
+            </div>
+
+            <!-- SEARCH BAR -->
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search..." onkeyup="cariProduk()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+
+            <!-- GRID PRODUK -->
+            <div class="product-grid" id="product-list">
+                <!-- Produk diisi oleh JS -->
+            </div>
+        </div>
+
+        <!-- PANEL KERANJANG -->
+        <div class="cart-panel">
+            <div class="cart-header">
+                <div class="customer-name">
+                    <h2 id="customer-name-display">Customer's Name</h2>
+                    <p id="order-number-display">Order Number #000</p>
+                </div>
+                <button class="btn-edit-customer" onclick="editCustomer()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+            </div>
+            
+            <div class="cart-list" id="cart-list">
+                <p class="empty-cart">No Item Selected</p>
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>Rp <span id="subtotal">0</span></span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax 10%</span>
+                    <span>Rp <span id="tax">0</span></span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row total-row">
+                    <span>TOTAL</span>
+                    <span>Rp <span id="total">0</span></span>
+                </div>
+            </div>
+
+            <div class="cart-actions">
+                <input type="text" id="input-voucher" placeholder="Add Promo or Voucher" class="input-voucher">
+                <button class="btn-payment-method" id="btn-metode-bayar" onclick="bukaModalPayment()">Payment Method</button>
+            </div>
+
+            <button onclick="prosesPembayaran()" class="btn-place-order">Place Order</button>
+        </div>
+    </div>
+
+    <!-- MODAL TAMBAH/EDIT PRODUK (DENGAN PILIH IKON & ID EDIT) -->
+    <div id="modal-produk" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="tutupModalProduk()">&times;</span>
+            <h2 id="judul-modal-produk">Tambah Produk</h2>
+            <form id="form-produk">
+                <!-- ID TERSEMBUNYI UNTUK EDIT -->
+                <input type="hidden" id="edit-id-produk">
+
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Nama Produk</label>
+                <input type="text" id="nama-produk" required placeholder="Cth: Donat Gula" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Harga (Rp)</label>
+                <input type="number" id="harga-produk" required placeholder="Cth: 15000" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Kategori</label>
+                <input type="text" id="kategori-produk" required placeholder="Cth: Donuts, Minuman, dll" list="list-kategori" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                <datalist id="list-kategori">
+                    <option value="Breads">
+                    <option value="Cakes">
+                    <option value="Minuman">
+                </datalist>
+
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Pilih Ikon Kategori</label>
+                <select id="icon-kategori" style="margin-bottom:15px; width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px;">
+                    <option value="cake">Kue / Cake</option>
+                    <option value="bread">Roti / Bread</option>
+                    <option value="coffee">Minuman / Coffee</option>
+                    <option value="box">Kotak / Box</option>
+                    <option value="star">Bintang / Spesial</option>
+                </select>
+                
+                <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Upload Gambar (Opsional)</label>
+                <input type="file" id="gambar-produk" accept="image/*" style="margin-bottom:20px; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; background:#F8F4F1;">
+                <small style="display:block; margin-top:-10px; margin-bottom:15px; color:#64748b;">*Biarkan kosong jika tidak ingin mengubah gambar saat edit.</small>
+                
+                <button type="submit" class="btn-primary">Simpan Produk</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL KALENDER -->
+    <div id="modal-kalender" class="modal">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <span class="close-btn" onclick="tutupKalender()">&times;</span>
+            <div id="kalender-bulan-tahun" style="margin-bottom: 20px;"></div>
+            <div class="kalender-grid" id="kalender-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; font-size: 14px; font-weight: 500;">
+                <!-- Header hari & tanggal akan diisi JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT CUSTOMER -->
+    <div id="modal-customer" class="modal">
+        <div class="modal-content" style="max-width: 350px;">
+            <span class="close-btn" onclick="tutupModalCustomer()">&times;</span>
+            <h2>Detail Customer</h2>
+            <form id="form-customer">
+                <label style="display:block; margin-bottom:8px; font-weight:600; color:#3E2723; font-size:14px;">Nama Customer</label>
+                <input type="text" id="input-nama-customer" required placeholder="Cth: Budi Santoso" style="margin-bottom: 20px;">
+                <button type="submit" class="btn-primary">Simpan Pesanan</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PAYMENT METHOD -->
+    <div id="modal-payment" class="modal">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <span class="close-btn" onclick="tutupModalPayment()">&times;</span>
+            <h2>Pilih Pembayaran</h2>
+            <div style="display: flex; gap: 15px; margin-top: 20px; justify-content: center;">
+                <div onclick="pilihPembayaran('Cash')" style="cursor: pointer; padding: 20px; border: 2px solid #e2e8f0; border-radius: 12px; width: 120px; transition: 0.2s;" class="payment-option">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3E2723" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px;"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
+                    <br><strong>Cash</strong>
+                </div>
+                <div onclick="pilihPembayaran('QRIS')" style="cursor: pointer; padding: 20px; border: 2px solid #e2e8f0; border-radius: 12px; width: 120px; transition: 0.2s;" class="payment-option">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3E2723" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <br><strong>QRIS</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TAMPILAN QRIS -->
+    <div id="modal-qris" class="modal">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <h2>Scan QRIS</h2>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Silakan tunjukkan QR Code ini ke pelanggan.</p>
+            <img id="img-qr-code" src="" alt="QR Code" style="width: 220px; height: 220px; margin: 0 auto; display: block; border: 2px solid #3E2723; border-radius: 12px; padding: 10px;">
+            <h2 id="qris-total" style="margin: 15px 0; color: #3E2723;">Rp 0</h2>
+            <button onclick="selesaiQRIS()" class="btn-primary" style="margin-top: 10px;">Selesai & Cetak Struk</button>
+        </div>
+    </div>
+
+    <!-- OVERLAY CLOSE ORDER -->
+    <div id="closed-overlay" class="closed-overlay" style="display: none;">
+        <div class="closed-content">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+            <h2>Kasir Ditutup</h2>
+            <p>Silakan buka kembali kasir untuk mulai melayani pesanan.</p>
+            <button onclick="bukaKasir()" class="btn-primary" style="max-width: 200px;">Buka Kasir</button>
+        </div>
+    </div>
+
+    <!-- AREA STRUK TERSEMBUNYI -->
+    <div id="struk-container" style="display: none;">
+        <div class="struk-logo" style="text-align: center; margin-bottom: 10px;">
+            <img src="img/logo-hitam.png" alt="Logo" style="max-width: 150px;">
+        </div>
+        <div style="text-align: center; font-size: 12px; margin-bottom: 10px;">
+            <p id="struk-tanggal" style="margin: 2px 0;"></p>
+            <p id="struk-customer" style="margin: 2px 0;"></p>
+            <p id="struk-order" style="margin: 2px 0;"></p>
+        </div>
+        <div id="struk-items"></div>
+        <div class="struk-total" id="struk-total-container">
+            <span>TOTAL</span>
+            <span id="struk-total-akhir"></span>
+        </div>
+        <p style="text-align:center; margin-top:20px; font-size:12px;">Terima Kasih!</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

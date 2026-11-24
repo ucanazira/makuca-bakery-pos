@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Bakery Makuca</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <!-- Logo di halaman login -->
+                <img src="img/logo-hitam.png" alt="Bakery Makuca Logo" style="max-width: 200px; margin-bottom: 15px;">
+                <p style="color: #64748b; font-size: 14px;">Silakan login untuk masuk ke sistem kasir</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="input-group-login">
+                    <label>Username</label>
+                    <input type="text" id="username" required placeholder="Masukkan username">
+                </div>
+                <div class="input-group-login">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="Masukkan password">
+                </div>
+                <button type="submit" class="btn-login">Login ke Kasir</button>
+                <p id="error-msg" class="error-msg"></p>
+            </form>
+
+            <!-- LINK DAFTAR AKUN BARU -->
+            <div style="text-align: center; margin-top: 20px;">
+                <p style="font-size: 14px; color: #64748b;">Belum punya akun? <a href="register.html" style="color: #3E2723; font-weight: 600; text-decoration: none;">Daftar di sini</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+
+            // 1. Cek Akun Admin Bawaan
+            if (user === 'admin' && pass === 'admin123') {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('namaKasir', 'Admin');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 2. Cek Akun dari Hasil Daftar (register.html)
+            let akunTerdaftar = JSON.parse(localStorage.getItem('pos_akun')) || [];
+            let akunDitemukan = akunTerdaftar.find(akun => akun.username === user && akun.password === pass);
+
+            if (akunDitemukan) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('namaKasir', akunDitemukan.username);
+                window.location.href = 'index.html';
+            } else {
+                errorMsg.innerText = "Username atau Password salah!";
+            }
+        });
+    </script>
+</body>
+</html>
