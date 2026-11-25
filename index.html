@@ -38,9 +38,9 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     Manajemen Produk
                 </a>
-                <a href="#" onclick="alert('Fitur Promo segera hadir!')">
+                <a href="promo.html">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                    Tambah Promo
+                    Manajemen Promo
                 </a>
             </nav>
             
@@ -122,6 +122,11 @@
                     <span>Tax 10%</span>
                     <span>Rp <span id="tax">0</span></span>
                 </div>
+                <!-- BARIS DISKON -->
+                <div class="summary-row" id="row-diskon" style="display: none;">
+                    <span>Diskon (<span id="kode-diskon-terpakai"></span>)</span>
+                    <span style="color: #ef4444;">- Rp <span id="diskon">0</span></span>
+                </div>
                 <div class="summary-divider"></div>
                 <div class="summary-row total-row">
                     <span>TOTAL</span>
@@ -134,17 +139,21 @@
                 <button class="btn-payment-method" id="btn-metode-bayar" onclick="bukaModalPayment()">Payment Method</button>
             </div>
 
+            <!-- TOMBOL TERAPKAN VOUCHER -->
+            <button onclick="terapkanVoucher()" style="margin: 0 40px 10px 40px; padding: 12px; background: #F5D6B4; color: #3E2723; border: none; border-radius: 30px; font-weight: 700; cursor: pointer; width: calc(100% - 80px); transition: 0.2s;">
+                Terapkan Voucher
+            </button>
+
             <button onclick="prosesPembayaran()" class="btn-place-order">Place Order</button>
         </div>
     </div>
 
-    <!-- MODAL TAMBAH/EDIT PRODUK (DENGAN PILIH IKON & ID EDIT) -->
+    <!-- MODAL TAMBAH/EDIT PRODUK -->
     <div id="modal-produk" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="tutupModalProduk()">&times;</span>
             <h2 id="judul-modal-produk">Tambah Produk</h2>
             <form id="form-produk">
-                <!-- ID TERSEMBUNYI UNTUK EDIT -->
                 <input type="hidden" id="edit-id-produk">
 
                 <label style="display:block; margin-bottom:5px; font-weight:600; font-size:14px; color:#334155;">Nama Produk</label>

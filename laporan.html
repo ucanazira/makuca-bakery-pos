@@ -37,9 +37,9 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     Manajemen Produk
                 </a>
-                <a href="#" onclick="alert('Fitur Promo segera hadir!')">
+                <a href="promo.html">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                    Tambah Promo
+                    Manajemen Promo
                 </a>
             </nav>
             
@@ -64,15 +64,25 @@
                 </div>
             </header>
 
+            <!-- FILTER TANGGAL & DOWNLOAD -->
+            <div class="card" style="margin-bottom: 30px; background: white; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <label style="font-weight: 600; color: #3E2723;">Pilih Tanggal:</label>
+                <input type="date" id="filter-tanggal" onchange="renderLaporan()" style="padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit;">
+                <button onclick="downloadExcel()" class="btn-primary" style="width: auto; padding: 12px 24px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download Excel
+                </button>
+            </div>
+
             <!-- KARTU PENDAPATAN -->
             <div class="card" style="margin-bottom: 30px; background: white; padding: 30px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                <h3 style="color: #64748b; font-size: 16px; font-weight: 600;">Total Pendapatan (Hari Ini)</h3>
+                <h3 style="color: #64748b; font-size: 16px; font-weight: 600;">Total Pendapatan (Tanggal Terpilih)</h3>
                 <h2 id="total-pendapatan" style="font-size: 40px; color: #10b981; margin-top: 10px; font-weight: 800;">Rp 0</h2>
             </div>
 
             <!-- TABEL PRODUK TERJUAL -->
             <div class="card" style="background: white; padding: 30px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02); margin-bottom: 30px;">
-                <h3 style="color: #3E2723; margin-bottom: 20px; font-size: 18px;">Rekap Produk Terjual</h3>
+                <h3 style="color: #3E2723; margin-bottom: 20px; font-size: 18px;">Rekap Produk Terjual (Tanggal Terpilih)</h3>
                 <div class="table-responsive">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
@@ -91,7 +101,7 @@
 
             <!-- TABEL RIWAYAT TRANSAKSI -->
             <div class="card" style="background: white; padding: 30px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                <h3 style="color: #3E2723; margin-bottom: 20px; font-size: 18px;">Riwayat Transaksi (Hari Ini)</h3>
+                <h3 style="color: #3E2723; margin-bottom: 20px; font-size: 18px;">Riwayat Transaksi (Tanggal Terpilih)</h3>
                 <div class="table-responsive">
                     <table style="width: 100%; border-collapse: collapse; text-align: left;">
                         <thead>
@@ -100,6 +110,8 @@
                                 <th style="padding: 12px;">No. Order</th>
                                 <th style="padding: 12px;">Customer</th>
                                 <th style="padding: 12px;">Item Dibeli</th>
+                                <th style="padding: 12px;">Voucher</th>
+                                <th style="padding: 12px;">Diskon</th>
                                 <th style="padding: 12px;">Total</th>
                                 <th style="padding: 12px;">Aksi</th>
                             </tr>
