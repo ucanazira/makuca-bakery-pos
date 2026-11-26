@@ -10,12 +10,13 @@ const produkDefault = [
 let produkList = JSON.parse(localStorage.getItem('pos_produk_v2')) || produkDefault;
 let keranjang = [];
 let filterKategoriAktif = "Semua";
-let metodePembayaranAktif = "Cash";
+let metodePembayaranAktif = null;
 let voucherAktif = null;
 
 let tempSubtotal = 0;
 let tempTax = 0;
 let tempTotalAkhir = 0;
+let tempDiskon = 0;
 
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
@@ -25,8 +26,8 @@ let currentYear = new Date().getFullYear();
 // ==========================================
 function getTodayString() {
     const now = new Date();
-    return now.getFullYear() + '-' + 
-           String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+    return now.getFullYear() + '-' +
+           String(now.getMonth() + 1).padStart(2, '0') + '-' +
            String(now.getDate()).padStart(2, '0');
 }
 
@@ -59,11 +60,26 @@ function logout() {
 
 function tutupKasir() {
     if (keranjang.length > 0) {
-        if (!confirm("Keranjang masih ada isinya. Tetap tutup kasir dan batalkan pesanan?")) return;
+        Swal.fire({
+            title: 'Keranjang Masih Ada!',
+            text: 'Tetap tutup kasir dan batalkan pesanan?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#D84315',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Tutup Kasir',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                keranjang = [];
+                voucherAktif = null;
+                renderKeranjang();
+                document.getElementById('closed-overlay').style.display = 'flex';
+            }
+        });
+    } else {
+        document.getElementById('closed-overlay').style.display = 'flex';
     }
-    keranjang = [];
-    renderKeranjang();
-    document.getElementById('closed-overlay').style.display = 'flex';
 }
 
 function bukaKasir() {
@@ -75,7 +91,7 @@ function updateWaktu() {
     const now = new Date();
     const elDate = document.getElementById('current-date');
     const elTime = document.getElementById('current-time');
-    
+
     if (elDate) {
         elDate.innerText = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     }
@@ -88,7 +104,7 @@ function updateWaktu() {
         elTime.innerHTML = `${hours}:${minutes} <span style="color:#94a3b8; font-weight:400; margin-left:4px;">${ampm}</span>`;
     }
 }
-setInterval(updateWaktu, 1000);
+setInterval(updateWaktu, 60000);
 updateWaktu();
 
 // ==========================================
@@ -119,7 +135,6 @@ function renderKalender(month, year) {
     const grid = document.getElementById('kalender-grid');
     if (!grid) return;
 
-    // Simpan header hari (Min, Sen, dst)
     const headerHari = Array.from(grid.children).slice(0, 7);
     grid.innerHTML = '';
     headerHari.forEach(day => grid.appendChild(day));
@@ -151,11 +166,11 @@ function gantiBulan(arah) {
 function renderProduk() {
     const productListEl = document.getElementById('product-list');
     if (!productListEl) return;
-    
+
     productListEl.innerHTML = '';
     const searchInput = document.getElementById('search-input');
     const keyword = searchInput ? searchInput.value.toLowerCase() : '';
-    
+
     const filtered = produkList.filter(p => {
         const matchKategori = filterKategoriAktif === "Semua" || p.kategori === filterKategoriAktif;
         const matchSearch = p.nama.toLowerCase().includes(keyword);
@@ -169,7 +184,7 @@ function renderProduk() {
             const div = document.createElement('div');
             div.className = 'product-card';
             div.onclick = () => tambahKeKeranjang(p);
-            
+
             div.innerHTML = `
                 <div class="product-image-container">
                     <img src="${p.gambar || 'https://via.placeholder.com/150'}" alt="${p.nama}">
@@ -205,7 +220,7 @@ function renderKategoriFilter() {
     if (!categoryContainer) return;
 
     const semuaKategori = [...new Set(produkList.map(p => p.kategori))];
-    
+
     let html = `
         <div class="category-item ${filterKategoriAktif === 'Semua' ? 'active' : ''}" onclick="filterKategori('Semua', this)">
             <div class="icon">
@@ -221,11 +236,11 @@ function renderKategoriFilter() {
     semuaKategori.forEach(kat => {
         let produkDenganKat = produkList.find(p => p.kategori === kat);
         let ikonKey = produkDenganKat && produkDenganKat.icon ? produkDenganKat.icon : 'bread';
-        let iconSvg = ikonMap[ikonKey] || ikonMap['bread']; 
+        let iconSvg = ikonMap[ikonKey] || ikonMap['bread'];
 
         let activeClass = filterKategoriAktif === kat ? 'active' : '';
         let jumlahItem = produkList.filter(p => p.kategori === kat).length;
-        
+
         html += `
             <div class="category-item ${activeClass}" onclick="filterKategori('${kat}', this)">
                 <div class="icon">${iconSvg}</div>
@@ -255,6 +270,12 @@ function renderKeranjang() {
     const cartListEl = document.getElementById('cart-list');
     if (!cartListEl) return;
 
+    if (keranjang.length === 0 && voucherAktif) {
+        voucherAktif = null;
+        const inputVoucher = document.getElementById('input-voucher');
+        if (inputVoucher) inputVoucher.value = '';
+    }
+
     cartListEl.innerHTML = '';
     let subtotal = 0;
 
@@ -282,11 +303,17 @@ function renderKeranjang() {
 
     let nominalDiskon = 0;
     if (voucherAktif) {
-        nominalDiskon = (subtotal * voucherAktif.diskon) / 100;
+        if (subtotal >= (voucherAktif.minBelanja || 0)) {
+            nominalDiskon = (subtotal * voucherAktif.diskon) / 100;
+        } else {
+            voucherAktif = null;
+            const inputVoucher = document.getElementById('input-voucher');
+            if (inputVoucher) inputVoucher.value = '';
+        }
     }
 
     const tax = subtotal * 0.1;
-    const total = subtotal + tax - nominalDiskon;
+    const total = Math.max(0, subtotal + tax - nominalDiskon);
 
     const elSub = document.getElementById('subtotal');
     const elTax = document.getElementById('tax');
@@ -297,7 +324,7 @@ function renderKeranjang() {
 
     if (elSub) elSub.innerText = subtotal.toLocaleString('id-ID');
     if (elTax) elTax.innerText = tax.toLocaleString('id-ID');
-    if (elTotal) elTotal.innerText = Math.max(0, total).toLocaleString('id-ID');
+    if (elTotal) elTotal.innerText = total.toLocaleString('id-ID');
 
     if (elRowDiskon && elKodeDiskon && elDiskon) {
         if (voucherAktif && nominalDiskon > 0) {
@@ -321,43 +348,56 @@ function kurangiQty(index) {
 // --- 6. PEMBAYARAN & STRUK ---
 // ==========================================
 function prosesPembayaran() {
-    if (keranjang.length === 0) return alert("Keranjang masih kosong!");
+    if (keranjang.length === 0) {
+        return Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Keranjang masih kosong!',
+            confirmButtonColor: '#3E2723'
+        });
+    }
+
+    if (!metodePembayaranAktif) {
+        return Swal.fire({
+            icon: 'warning',
+            title: 'Metode Pembayaran',
+            text: 'Silakan pilih metode pembayaran terlebih dahulu (Cash / QRIS)!',
+            confirmButtonColor: '#3E2723'
+        });
+    }
 
     let subtotal = 0;
     keranjang.forEach(item => subtotal += (item.harga * item.qty));
     const tax = subtotal * 0.1;
-    const totalAkhir = subtotal + tax;
+
+    let nominalDiskon = 0;
+    if (voucherAktif) {
+        nominalDiskon = (subtotal * voucherAktif.diskon) / 100;
+    }
+    const totalAkhir = subtotal + tax - nominalDiskon;
 
     if (metodePembayaranAktif === "QRIS") {
         tempSubtotal = subtotal;
         tempTax = tax;
         tempTotalAkhir = totalAkhir;
-        
+        tempDiskon = nominalDiskon;
+
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=Pembayaran+QRIS+Bakery+Makuca+Total:${totalAkhir}`;
-        
         document.getElementById('img-qr-code').src = qrUrl;
         document.getElementById('qris-total').innerText = `Rp ${totalAkhir.toLocaleString('id-ID')}`;
         document.getElementById('modal-qris').style.display = 'flex';
-        
-        return; 
+        return;
     }
 
-    prosesSelesaiTransaksi(subtotal, tax, totalAkhir);
+    prosesSelesaiTransaksi(subtotal, tax, totalAkhir, nominalDiskon);
 }
 
 function selesaiQRIS() {
     document.getElementById('modal-qris').style.display = 'none';
-    prosesSelesaiTransaksi(tempSubtotal, tempTax, tempTotalAkhir);
+    prosesSelesaiTransaksi(tempSubtotal, tempTax, tempTotalAkhir, tempDiskon);
 }
 
-function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
-    let nominalDiskon = 0;
-    if (voucherAktif) {
-        nominalDiskon = (subtotal * voucherAktif.diskon) / 100;
-    }
-    const totalSetelahDiskon = totalAkhir - nominalDiskon;
-
-    // Simpan data produk terjual (untuk laporan rekap produk)
+function prosesSelesaiTransaksi(subtotal, tax, totalSetelahDiskon, nominalDiskon) {
     let produkTerjual = JSON.parse(localStorage.getItem('pos_terjual')) || {};
     keranjang.forEach(item => {
         if (produkTerjual[item.nama]) {
@@ -369,10 +409,13 @@ function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
     });
     localStorage.setItem('pos_terjual', JSON.stringify(produkTerjual));
 
-    // Simpan ke Riwayat Transaksi (untuk laporan per tanggal)
     let riwayat = JSON.parse(localStorage.getItem('pos_riwayat_transaksi')) || [];
     let noOrder = document.getElementById('order-number-display').innerText.replace('Order Number #', '');
     let namaCust = document.getElementById('customer-name-display').innerText;
+
+    if (noOrder === '000' || !noOrder) {
+        noOrder = getNextOrderNumber();
+    }
 
     riwayat.push({
         id: 'TRX-' + Date.now(),
@@ -387,12 +430,11 @@ function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
     });
     localStorage.setItem('pos_riwayat_transaksi', JSON.stringify(riwayat));
 
-    // Cetak Struk
     const strukContainer = document.getElementById('struk-container');
     const now = new Date();
     const tanggalStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const jamStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':');
-    
+
     document.getElementById('struk-tanggal').innerText = `Tanggal: ${tanggalStr}, ${jamStr}`;
     document.getElementById('struk-customer').innerText = `Nama: ${namaCust}`;
     document.getElementById('struk-order').innerText = `Order Number #${noOrder}`;
@@ -406,10 +448,22 @@ function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
             </div>
         `;
     });
-    
+
+    itemsHTML += '<div class="struk-divider"></div>';
+    itemsHTML += `
+        <div class="struk-item">
+            <span>Subtotal</span>
+            <span>Rp ${subtotal.toLocaleString('id-ID')}</span>
+        </div>
+        <div class="struk-item">
+            <span>Tax 10%</span>
+            <span>Rp ${tax.toLocaleString('id-ID')}</span>
+        </div>
+    `;
+
     if (nominalDiskon > 0) {
         itemsHTML += `
-            <div class="struk-item" style="color:#ef4444; margin-top:5px;">
+            <div class="struk-item" style="color:#ef4444;">
                 <span>Diskon (${voucherAktif.kode})</span>
                 <span>- Rp ${nominalDiskon.toLocaleString('id-ID')}</span>
             </div>
@@ -422,7 +476,7 @@ function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
     if (strukContainer) {
         strukContainer.style.display = 'block';
         window.print();
-        
+
         setTimeout(() => {
             strukContainer.style.display = 'none';
             keranjang = [];
@@ -432,9 +486,13 @@ function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
             document.getElementById('customer-name-display').innerText = "Customer's Name";
             document.getElementById('order-number-display').innerText = "Order Number #000";
             document.getElementById('btn-metode-bayar').innerText = "Payment Method";
-            document.getElementById('btn-metode-bayar').style.background = ''; 
+            document.getElementById('btn-metode-bayar').style.background = '';
             document.getElementById('btn-metode-bayar').style.color = '';
-            metodePembayaranAktif = "Cash";
+            metodePembayaranAktif = null;
+            tempSubtotal = 0;
+            tempTax = 0;
+            tempTotalAkhir = 0;
+            tempDiskon = 0;
         }, 1000);
     }
 }
@@ -443,7 +501,14 @@ function prosesSelesaiTransaksi(subtotal, tax, totalAkhir) {
 // --- 7. MODAL PAYMENT METHOD & VOUCHER ---
 // ==========================================
 function bukaModalPayment() {
-    if (keranjang.length === 0) return alert("Keranjang masih kosong!");
+    if (keranjang.length === 0) {
+        return Swal.fire({
+            icon: 'info',
+            title: 'Keranjang Kosong',
+            text: 'Tambahkan produk terlebih dahulu sebelum memilih pembayaran.',
+            confirmButtonColor: '#3E2723'
+        });
+    }
     document.getElementById('modal-payment').style.display = 'flex';
 }
 
@@ -464,29 +529,59 @@ let promoList = JSON.parse(localStorage.getItem('pos_promo')) || [];
 
 function terapkanVoucher() {
     const input = document.getElementById('input-voucher').value.toUpperCase();
-    if (!input) return alert("Masukkan kode voucher terlebih dahulu!");
+    if (!input) {
+        return Swal.fire({
+            icon: 'warning',
+            title: 'Kosong',
+            text: 'Masukkan kode voucher terlebih dahulu!',
+            confirmButtonColor: '#3E2723'
+        });
+    }
 
     let promo = promoList.find(p => p.kode === input);
-    if (!promo) return alert("Kode voucher tidak ditemukan!");
+    if (!promo) {
+        return Swal.fire({
+            icon: 'error',
+            title: 'Tidak Ditemukan',
+            text: 'Kode voucher tidak ditemukan!',
+            confirmButtonColor: '#3E2723'
+        });
+    }
 
     const hariIni = new Date();
     hariIni.setHours(0, 0, 0, 0);
     const mulai = new Date(promo.mulai);
     const berakhir = new Date(promo.berakhir);
 
-    if (hariIni < mulai) return alert("Promo belum berlaku.");
-    if (hariIni > berakhir) return alert("Promo sudah kadaluarsa.");
+    if (hariIni < mulai) {
+        return Swal.fire({ icon: 'info', title: 'Belum Berlaku', text: 'Promo ini belum memasuki tanggal berlaku.', confirmButtonColor: '#3E2723' });
+    }
+    if (hariIni > berakhir) {
+        return Swal.fire({ icon: 'error', title: 'Kadaluarsa', text: 'Promo ini sudah melewati tanggal berakhir.', confirmButtonColor: '#3E2723' });
+    }
 
     let subtotal = 0;
     keranjang.forEach(item => subtotal += (item.harga * item.qty));
-    
+
     if (subtotal < (promo.minBelanja || 0)) {
-        return alert(`Minimum belanja belum terpenuhi. Butuh Rp ${(promo.minBelanja).toLocaleString('id-ID')} untuk memakai promo ini.`);
+        return Swal.fire({
+            icon: 'warning',
+            title: 'Belum Cukup',
+            text: `Minimum belanja belum terpenuhi. Butuh Rp ${(promo.minBelanja).toLocaleString('id-ID')} untuk memakai promo ini.`,
+            confirmButtonColor: '#3E2723'
+        });
     }
 
     voucherAktif = promo;
     renderKeranjang();
-    alert(`Voucher ${promo.kode} berhasil diterapkan! Diskon ${promo.diskon}%.`);
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: `Voucher ${promo.kode} berhasil diterapkan! Diskon ${promo.diskon}%.`,
+        confirmButtonColor: '#10b981',
+        timer: 2000,
+        showConfirmButton: false
+    });
 }
 
 // ==========================================
@@ -530,18 +625,28 @@ function editProduk(id) {
     document.getElementById('harga-produk').value = produk.harga;
     document.getElementById('kategori-produk').value = produk.kategori;
     document.getElementById('icon-kategori').value = produk.icon || 'bread';
-    
+
     document.getElementById('modal-produk').style.display = 'flex';
 }
 
 function hapusProduk(id) {
-    if (!confirm("Yakin ingin menghapus produk ini?")) return;
-
-    produkList = produkList.filter(p => p.id !== id);
-    localStorage.setItem('pos_produk_v2', JSON.stringify(produkList));
-    
-    renderManajemenProduk();
-    alert("Produk berhasil dihapus.");
+    Swal.fire({
+        title: 'Hapus Produk?',
+        text: "Produk ini akan dihapus secara permanen!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            produkList = produkList.filter(p => p.id !== id);
+            localStorage.setItem('pos_produk_v2', JSON.stringify(produkList));
+            renderManajemenProduk();
+            Swal.fire('Terhapus!', 'Produk berhasil dihapus.', 'success');
+        }
+    });
 }
 
 // ==========================================
@@ -551,13 +656,13 @@ function bukaModalProduk() {
     document.getElementById('judul-modal-produk').innerText = "Tambah Produk";
     document.getElementById('form-produk').reset();
     document.getElementById('edit-id-produk').value = "";
-    
+
     document.getElementById('modal-produk').style.display = 'flex';
-    if(document.getElementById('sidebar') && document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
+    if (document.getElementById('sidebar') && document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
 }
 
-function tutupModalProduk() { 
-    document.getElementById('modal-produk').style.display = 'none'; 
+function tutupModalProduk() {
+    document.getElementById('modal-produk').style.display = 'none';
 }
 
 const formProduk = document.getElementById('form-produk');
@@ -589,18 +694,24 @@ if (formProduk) {
             }
 
             localStorage.setItem('pos_produk_v2', JSON.stringify(produkList));
-            
-            if(document.getElementById('product-list')) {
+
+            if (document.getElementById('product-list')) {
                 renderProduk();
                 renderKategoriFilter();
             }
-            if(document.getElementById('tabel-manajemen-body')) {
+            if (document.getElementById('tabel-manajemen-body')) {
                 renderManajemenProduk();
             }
 
             tutupModalProduk();
             formProduk.reset();
-            alert(idEdit ? "Produk berhasil diupdate!" : "Produk berhasil ditambahkan!");
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: idEdit ? "Produk berhasil diupdate!" : "Produk berhasil ditambahkan!",
+                timer: 1500,
+                showConfirmButton: false
+            });
         };
 
         if (file) {
@@ -610,7 +721,7 @@ if (formProduk) {
             };
             reader.readAsDataURL(file);
         } else {
-            simpanData(''); 
+            simpanData('');
         }
     });
 }
@@ -621,26 +732,24 @@ if (formProduk) {
 function renderLaporan() {
     const filterEl = document.getElementById('filter-tanggal');
     if (filterEl && !filterEl.value) {
-        const now = new Date();
-        filterEl.value = now.toISOString().split('T')[0];
+        filterEl.value = getTodayString();
     }
 
-    const tanggalDipilih = filterEl ? filterEl.value : new Date().toISOString().split('T')[0];
+    const tanggalDipilih = filterEl ? filterEl.value : getTodayString();
 
     let riwayat = JSON.parse(localStorage.getItem('pos_riwayat_transaksi')) || [];
     let riwayatFiltered = riwayat.filter(trx => trx.tanggal.startsWith(tanggalDipilih));
 
-    // Hitung Total Pendapatan & Rekap Produk Kotor
     let totalPendapatan = 0;
     let totalDiskonHariIni = 0;
     let rekapProduk = {};
 
     riwayatFiltered.forEach(trx => {
-        totalPendapatan += trx.total; // Total bersih setelah diskon
+        totalPendapatan += trx.total;
         totalDiskonHariIni += (trx.diskonNominal || 0);
 
         trx.items.forEach(item => {
-            let hargaKotor = item.harga * item.qty; // Harga sebelum diskon
+            let hargaKotor = item.harga * item.qty;
             if (rekapProduk[item.nama]) {
                 rekapProduk[item.nama].qty += item.qty;
                 rekapProduk[item.nama].total += hargaKotor;
@@ -650,18 +759,16 @@ function renderLaporan() {
         });
     });
 
-    // Render Pendapatan
     const elPendapatan = document.getElementById('total-pendapatan');
     if (elPendapatan) {
         elPendapatan.innerText = `Rp ${totalPendapatan.toLocaleString('id-ID')}`;
     }
 
-    // Render Tabel Produk Terjual
     const elTabelProduk = document.getElementById('tabel-laporan-body');
     if (elTabelProduk) {
         elTabelProduk.innerHTML = '';
         const keys = Object.keys(rekapProduk);
-        
+
         if (keys.length === 0) {
             elTabelProduk.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#94a3b8;">Belum ada produk terjual pada tanggal ini</td></tr>';
         } else {
@@ -676,7 +783,6 @@ function renderLaporan() {
                 elTabelProduk.appendChild(tr);
             });
 
-            // Tampilkan baris Total Diskon jika ada
             if (totalDiskonHariIni > 0) {
                 const trDiskon = document.createElement('tr');
                 trDiskon.innerHTML = `
@@ -688,7 +794,6 @@ function renderLaporan() {
         }
     }
 
-    // Render Tabel Riwayat Transaksi
     const elTabelTransaksi = document.getElementById('tabel-transaksi-body');
     if (elTabelTransaksi) {
         elTabelTransaksi.innerHTML = '';
@@ -700,7 +805,7 @@ function renderLaporan() {
             riwayatFiltered.forEach(trx => {
                 const tr = document.createElement('tr');
                 const waktu = new Date(trx.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                
+
                 let itemsList = '<ul style="list-style-type: disc; margin-top: 5px; padding-left: 15px;">';
                 trx.items.forEach(item => {
                     itemsList += `<li>${item.nama} (x${item.qty})</li>`;
@@ -711,7 +816,7 @@ function renderLaporan() {
                 if (trx.promo) {
                     voucherText = `<span style="background: #F5D6B4; color: #3E2723; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 12px;">${trx.promo}</span>`;
                 }
-                
+
                 let diskonText = "-";
                 if (trx.diskonNominal && trx.diskonNominal > 0) {
                     diskonText = `<span style="color: #ef4444; font-weight: 600;">- Rp ${trx.diskonNominal.toLocaleString('id-ID')}</span>`;
@@ -741,18 +846,42 @@ function renderLaporan() {
 }
 
 function hapusTransaksi(idTransaksi) {
-    if (!confirm("Yakin ingin membatalkan transaksi ini? Total pendapatan dan produk terjual akan disesuaikan.")) return;
+    Swal.fire({
+        title: 'Batalkan Transaksi?',
+        text: "Total pendapatan dan rekap produk terjual akan disesuaikan kembali.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Batalkan',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let riwayat = JSON.parse(localStorage.getItem('pos_riwayat_transaksi')) || [];
+            let index = riwayat.findIndex(t => t.id === idTransaksi);
 
-    let riwayat = JSON.parse(localStorage.getItem('pos_riwayat_transaksi')) || [];
-    let index = riwayat.findIndex(t => t.id === idTransaksi);
-    
-    if (index !== -1) {
-        let trx = riwayat[index];
-        riwayat.splice(index, 1);
-        localStorage.setItem('pos_riwayat_transaksi', JSON.stringify(riwayat));
-        renderLaporan();
-        alert("Transaksi berhasil dibatalkan.");
-    }
+            if (index !== -1) {
+                let trx = riwayat[index];
+
+                let produkTerjual = JSON.parse(localStorage.getItem('pos_terjual')) || {};
+                trx.items.forEach(item => {
+                    if (produkTerjual[item.nama]) {
+                        produkTerjual[item.nama].qty -= item.qty;
+                        produkTerjual[item.nama].total -= (item.harga * item.qty);
+                        if (produkTerjual[item.nama].qty <= 0) {
+                            delete produkTerjual[item.nama];
+                        }
+                    }
+                });
+                localStorage.setItem('pos_terjual', JSON.stringify(produkTerjual));
+
+                riwayat.splice(index, 1);
+                localStorage.setItem('pos_riwayat_transaksi', JSON.stringify(riwayat));
+                renderLaporan();
+                Swal.fire('Dibatalkan!', 'Transaksi berhasil dibatalkan.', 'success');
+            }
+        }
+    });
 }
 
 // ==========================================
@@ -760,13 +889,18 @@ function hapusTransaksi(idTransaksi) {
 // ==========================================
 function downloadExcel() {
     const filterEl = document.getElementById('filter-tanggal');
-    const tanggalDipilih = filterEl ? filterEl.value : new Date().toISOString().split('T')[0];
+    const tanggalDipilih = filterEl ? filterEl.value : getTodayString();
 
     let riwayat = JSON.parse(localStorage.getItem('pos_riwayat_transaksi')) || [];
     let riwayatFiltered = riwayat.filter(trx => trx.tanggal.startsWith(tanggalDipilih));
 
     if (riwayatFiltered.length === 0) {
-        return alert("Tidak ada data transaksi pada tanggal ini untuk diunduh.");
+        return Swal.fire({
+            icon: 'info',
+            title: 'Data Kosong',
+            text: 'Tidak ada data transaksi pada tanggal ini untuk diunduh.',
+            confirmButtonColor: '#3E2723'
+        });
     }
 
     let csvContent = "Waktu,No Order,Customer,Item,Total,Metode,Voucher,Diskon\n";
@@ -775,9 +909,9 @@ function downloadExcel() {
         const waktu = new Date(trx.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         const itemsStr = trx.items.map(i => `${i.nama} (x${i.qty})`).join(' | ');
         const voucherStr = trx.promo || "-";
-        const metodeStr = trx.metode || "Cash";
+        const metodeStr = trx.metode || "-";
         const diskonStr = trx.diskonNominal || 0;
-        
+
         csvContent += `"${waktu}","${trx.noOrder}","${trx.customer}","${itemsStr}","${trx.total}","${metodeStr}","${voucherStr}","${diskonStr}"\n`;
     });
 
@@ -789,6 +923,14 @@ function downloadExcel() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'File Excel (CSV) berhasil diunduh.',
+        timer: 2000,
+        showConfirmButton: false
+    });
 }
 
 // ==========================================
@@ -816,11 +958,15 @@ if (formCustomer) {
     formCustomer.addEventListener('submit', function(e) {
         e.preventDefault();
         let namaBaru = document.getElementById('input-nama-customer').value;
-        
+
         if (namaBaru.trim() !== "") {
             document.getElementById('customer-name-display').innerText = namaBaru;
-            let nomorUrut = getNextOrderNumber();
-            document.getElementById('order-number-display').innerText = `Order Number #${nomorUrut}`;
+            let orderEl = document.getElementById('order-number-display');
+            let currentOrder = orderEl.innerText.replace('Order Number #', '');
+            if (currentOrder === '000' || !currentOrder) {
+                let nomorUrut = getNextOrderNumber();
+                orderEl.innerText = `Order Number #${nomorUrut}`;
+            }
             tutupModalCustomer();
         }
     });
@@ -842,10 +988,10 @@ function renderPromo() {
     promoList.forEach((p, index) => {
         const mulai = new Date(p.mulai);
         const berakhir = new Date(p.berakhir);
-        
+
         let status = "";
         let warnaStatus = "";
-        
+
         if (hariIni < mulai) {
             status = "Belum Mulai";
             warnaStatus = "#f59e0b";
@@ -878,10 +1024,23 @@ function renderPromo() {
 }
 
 function hapusPromo(index) {
-    if (!confirm("Yakin ingin menghapus promo ini?")) return;
-    promoList.splice(index, 1);
-    localStorage.setItem('pos_promo', JSON.stringify(promoList));
-    renderPromo();
+    Swal.fire({
+        title: 'Hapus Promo?',
+        text: "Promo ini akan dihapus secara permanen.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            promoList.splice(index, 1);
+            localStorage.setItem('pos_promo', JSON.stringify(promoList));
+            renderPromo();
+            Swal.fire('Terhapus!', 'Promo berhasil dihapus.', 'success');
+        }
+    });
 }
 
 function bukaModalPromo() {
@@ -904,16 +1063,35 @@ if (formPromo) {
         const berakhir = document.getElementById('berakhir-promo').value;
 
         if (new Date(berakhir) < new Date(mulai)) {
-            alert("Tanggal berakhir tidak boleh lebih awal dari tanggal mulai!");
-            return;
+            return Swal.fire({
+                icon: 'error',
+                title: 'Tanggal Salah',
+                text: 'Tanggal berakhir tidak boleh lebih awal dari tanggal mulai!',
+                confirmButtonColor: '#3E2723'
+            });
+        }
+
+        if (promoList.find(p => p.kode === kode)) {
+            return Swal.fire({
+                icon: 'warning',
+                title: 'Duplikat',
+                text: 'Kode promo sudah ada! Gunakan kode lain.',
+                confirmButtonColor: '#3E2723'
+            });
         }
 
         promoList.push({ kode, diskon, minBelanja, mulai, berakhir });
         localStorage.setItem('pos_promo', JSON.stringify(promoList));
-        
+
         tutupModalPromo();
         renderPromo();
-        alert("Promo berhasil ditambahkan!");
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: "Promo berhasil ditambahkan!",
+            timer: 1500,
+            showConfirmButton: false
+        });
     });
 }
 
@@ -925,7 +1103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProduk();
         renderKategoriFilter();
         renderKeranjang();
-    } 
+    }
     else if (document.getElementById('tabel-laporan-body')) {
         renderLaporan();
     }
